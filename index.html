@@ -7,21 +7,17 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
-  --paper:#EEF2EE; --panel:#FFFFFF; --ink:#16302B; --soft:#587068; --line:#CFD9D3;
-  --mat:#1E5B4C; --mat-line:#2F7361; --chalk:#F4F1E4; --pin:#C93A68; --pin-ink:#FFFFFF; --tape:#F0C445;
+  /* palette from the fabric-studio image: navy wall, cream toile, ochre, sage, bronze */
+  --paper:#131926; --panel:#1A2130; --ink:#EADCBF; --soft:#A79E88; --line:#353D4E;
+  --mat:#0F141E; --mat-line:#1C2432; --chalk:#EADCBF; --pin:#C4953F; --pin-ink:#17120A; --tape:#A9B58E;
+  color-scheme:dark;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --paper:#0F1F1B; --panel:#172B26; --ink:#E6EEE9; --soft:#9DB3AA; --line:#2C453D;
-    --mat:#17483C; --mat-line:#235C4D; --pin:#EE6E97; --pin-ink:#1B0A10;
-  }
+  :root:not([data-theme="light"]){--paper:#131926; --panel:#1A2130; --ink:#EADCBF}
 }
-:root[data-theme="dark"]{
-  --paper:#0F1F1B; --panel:#172B26; --ink:#E6EEE9; --soft:#9DB3AA; --line:#2C453D;
-  --mat:#17483C; --mat-line:#235C4D; --pin:#EE6E97; --pin-ink:#1B0A10;
-}
+:root[data-theme="dark"]{--paper:#131926; --panel:#1A2130; --ink:#EADCBF}
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--paper);color:var(--ink);
@@ -64,10 +60,14 @@ h1{font:700 1.5rem/1.1 "Bricolage Grotesque","Instrument Sans",system-ui,sans-se
 fieldset.field{border:0;margin:0;padding:0}
 input[type=range]{width:100%;accent-color:var(--pin);height:28px;margin:0}
 input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line);border-radius:6px;background:none}
+.chip{display:inline-block;flex:none;width:44px;height:36px;padding:0;border:1.5px solid var(--line);border-radius:6px;cursor:pointer}
+.chip:focus-visible{outline:3px solid var(--tape);outline-offset:2px}
+.hsl{display:grid;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:8px}
+.strip{display:block;height:8px;border-radius:4px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1.5px solid var(--line);border-radius:8px;overflow:hidden}
 .seg label{position:relative;text-align:center;padding:10px 4px;font-size:.88rem;cursor:pointer;border-left:1px solid var(--line)}
-.seg label:first-child{border-left:0}
+.seg label:first-child,.seg label[hidden]+label{border-left:0}
 .seg input{position:absolute;opacity:0}
 .seg label:has(input:checked){background:var(--ink);color:var(--panel);font-weight:600}
 .tray{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px}
@@ -88,8 +88,7 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
 <body>
 <div class="app">
   <section class="stage">
-    <header><div><h1>Garment Mockup</h1>
-      <p class="credit">Created by Emma · <a href="https://www.instagram.com/seamcerely/" target="_blank" rel="noopener">Instagram</a></p></div>
+    <header><div><h1>Huereka</h1>
       <button class="btn main" id="save">Save picture</button></header>
     <canvas id="cv" width="1200" height="1800" aria-label="Preview of you wearing the dress"></canvas>
   </section>
@@ -116,11 +115,11 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
         <label class="field"><span>Soft edge</span><input type="range" data-k="feather" min="0" max="24" step="1"></label>
       </div>
       <div class="row">
-        <label class="row"><input type="color" data-k="skin"><span>Body skin tone</span></label>
+        <label class="row"><button type="button" class="chip" data-col="skin" aria-label="Change colour"></button><span>Body skin tone</span></label>
         <button class="btn quiet" data-pick="skin">Pick from photo</button>
       </div>
       <div class="row">
-        <label class="row"><input type="color" data-k="bg"><span>Backdrop colour</span></label>
+        <label class="row"><button type="button" class="chip" data-col="bg" aria-label="Change colour"></button><span>Backdrop colour</span></label>
         <button class="btn quiet" data-pick="bg">Pick from photo</button>
       </div>
       <div class="row">
@@ -139,7 +138,7 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
       <label class="field" data-for="dress"><span>Length: <output id="lenOut"></output></span><input type="range" data-k="hem" min="450" max="780" step="1"></label>
       <label class="field" data-for="sep"><span>Top hem length</span><input type="range" data-k="them" min="300" max="480" step="1"></label>
       <fieldset class="field" data-for="sep"><legend>Top fabric</legend><div class="seg" data-seg="tfill" data-o="image:Fabric image,solid:Solid colour"></div></fieldset>
-      <label class="row" data-for="sep" data-if="tfill:solid"><input type="color" data-k="tcolor"><span>Top colour</span></label>
+      <label class="row" data-for="sep" data-if="tfill:solid"><button type="button" class="chip" data-col="tcolor" aria-label="Change colour"></button><span>Top colour</span></label>
       <h2 class="sub" data-for="sep">Bottom</h2>
       <fieldset class="field" data-for="sep"><legend>Style</legend><div class="seg" data-seg="btype" data-o="skirt:Skirt,pants:Pants"></div></fieldset>
       <fieldset class="field" data-for="sep"><legend>Width</legend><div class="seg" data-seg="bwidth" data-o="fit:Fitted,aline:A-line,flare:Flared"></div></fieldset>
@@ -150,7 +149,7 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
           <button type="button" class="sw pc" data-c="#16161a" style="background:#16161a" aria-label="Black"></button>
           <button type="button" class="sw pc" data-c="#f3eee0" style="background:#f3eee0" aria-label="Ivory"></button>
           <button type="button" class="sw pc" id="pcCustom" hidden aria-label="Your last custom colour"></button>
-          <label class="btn quiet">Custom colour<input type="color" id="pantsPick" style="position:absolute;inset:0;width:100%;height:100%;opacity:0"></label>
+          <button type="button" class="btn quiet" id="pantsPick">Custom colour</button>
         </div></fieldset>
       <p class="hint" data-for="sep">Fabric images for the top and bottom are chosen in the Fabric tab.</p>
       <label class="check"><input type="checkbox" data-k="shade">Show folds and shading</label>
@@ -166,6 +165,12 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
       <label class="field"><span>Print size</span><input type="range" data-k="fsize" min="8" max="500" step="1"></label>
       <label class="field"><span>Rotate print</span><input type="range" data-k="frot" min="-180" max="180" step="1"></label>
       <div class="row"><button class="btn quiet" id="fabReset">Reset print position</button></div>
+    </div>
+    <div id="hsl" class="hsl" hidden>
+      <div class="row"><span class="chip" id="hslPrev"></span><strong id="hslName"></strong><button type="button" class="btn quiet" id="hslDone" style="margin-left:auto">Done</button></div>
+      <label class="field"><span>Hue</span><i class="strip" id="stH"></i><input type="range" id="hH" min="0" max="360" step="1"></label>
+      <label class="field"><span>Saturation</span><i class="strip" id="stS"></i><input type="range" id="hS" min="0" max="100" step="1"></label>
+      <label class="field"><span>Lightness</span><i class="strip" id="stL"></i><input type="range" id="hL" min="0" max="100" step="1"></label>
     </div>
     <p id="msg" role="status"></p>
   </section>
@@ -316,6 +321,14 @@ function bottom(c){
       p.quadraticCurveTo(X(hw*.4),h+sag,X(-1),h+sag);p.closePath()});
     const m=Math.max(hw,68);fin(p,300-m,300+m,st==='fit'?null:()=>folds(c,st==='flare'?6:3,54,hw,303,h+40));
     return}
+  if(st==='flare'){
+    const out=y=>67+9*ss((y-389)/85);
+    const wl=(s,inn)=>{const p=new Path2D(),ys=[];for(let y=389;y<h;y+=12)ys.push(y);ys.push(h);
+      p.moveTo(300-s*4,297);p.lineTo(300+s*54,297);p.bezierCurveTo(300+s*55,330,300+s*66,352,300+s*67,389);
+      ys.forEach(y=>p.lineTo(300+s*out(y),y));ys.slice().reverse().forEach(y=>{if(y>=430)p.lineTo(inn(y),y)});p.closePath();
+      const e=300+s*76,a=Math.min(e,inn(h)),b=Math.max(e,inn(h));
+      fin(p,a-2,b+2,()=>{c.strokeStyle='rgba(255,255,255,.14)';c.lineWidth=1;c.beginPath();c.moveTo((300+s*out(440)+inn(440))/2,440);c.lineTo((e+inn(h))/2,h);c.stroke()})};
+    wl(1,y=>298);wl(-1,y=>302+18*ss((y-430)/190));return}
   const w3={fit:[37,23,14],aline:[38,28,26],flare:[40,43,54]}[st];
   const hwf=y=>y<620?w3[0]+(w3[1]-w3[0])*ss((y-430)/190):w3[1]+(w3[2]-w3[1])*ss((y-620)/107);
   const leg=(c0,c1,c2,s)=>{
@@ -416,43 +429,41 @@ function loadImage(file){return new Promise((res,rej)=>{const u=URL.createObject
   im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u})}
 function toCanvas(im,max){const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
   c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c}
-function addSwatch(src,pick){
+function addSwatch(src,pick,user){
   const w=src.width,h=src.height,mir=document.createElement('canvas');mir.width=w*2;mir.height=h*2;
   const m=mir.getContext('2d');
   for(const[sx,sy]of[[1,1],[-1,1],[1,-1],[-1,-1]]){m.setTransform(sx,0,0,sy,sx<0?w*2:0,sy<0?h*2:0);m.drawImage(src,0,0)}
-  const sw={cv:src,mir},b=document.createElement('button'),t=document.createElement('canvas');
+  const sw={cv:src,mir,user},b=document.createElement('button'),t=document.createElement('canvas');
   t.width=t.height=120;const k=Math.max(120/w,120/h);t.getContext('2d').drawImage(src,(120-w*k)/2,(120-h*k)/2,w*k,h*k);
   b.className='sw';b.type='button';b.setAttribute('aria-label','Fabric '+(swatches.length+1));b.append(t);
   b.onclick=()=>choose(sw);sw.btn=b;swatches.push(sw);$('#tray').append(b);
   if(pick){choose(sw);b.scrollIntoView({block:'nearest',inline:'nearest'})}
+  return sw;
 }
-function choose(sw){const k=cur();F[k].sw=sw;if(k==='top')S.tfill='image';if(k==='bottom')S.bfill='image';if(typeof vis==='function'){vis();sync()}draw()}
+function choose(sw){const k=cur();F[k].sw=sw;if(sw.user)try{localStorage.setItem('lastFabric',sw.cv.toDataURL('image/jpeg',.85))}catch{}if(k==='top')S.tfill='image';if(k==='bottom')S.bfill='image';if(typeof vis==='function'){vis();sync()}draw()}
 function starters(){
-  const mk=fn=>{const c=document.createElement('canvas');c.width=c.height=240;fn(c.getContext('2d'));return c};
-  addSwatch(mk(x=>{x.fillStyle='#21463D';x.fillRect(0,0,240,240);
-    const fl=[[30,40,'#F3B6C4'],[150,20,'#F6E3A1'],[95,110,'#F3B6C4'],[210,95,'#F4F1E4'],[40,180,'#F6E3A1'],[170,175,'#F3B6C4'],[110,215,'#F4F1E4'],[225,225,'#F6E3A1']];
-    for(const[fx,fy,col]of fl)for(const ox of[-240,0,240])for(const oy of[-240,0,240]){const X=fx+ox,Y=fy+oy;
-      x.fillStyle=col;for(let i=0;i<5;i++){const a=i*Math.PI*2/5+fx;x.beginPath();x.arc(X+Math.cos(a)*9,Y+Math.sin(a)*9,7,0,7);x.fill()}
-      x.fillStyle='#D98A2B';x.beginPath();x.arc(X,Y,4.5,0,7);x.fill();
-      x.fillStyle='#6FA98C';x.beginPath();x.ellipse(X+22,Y+16,8,3.5,.7,0,7);x.fill()}}),true);
-  addSwatch(mk(x=>{x.fillStyle='#F7F3E8';x.fillRect(0,0,240,240);x.fillStyle='rgba(38,84,140,.5)';
-    for(let i=0;i<240;i+=60){x.fillRect(i,0,30,240);x.fillRect(0,i,240,30)}}));
-  addSwatch(mk(x=>{x.fillStyle='#1E365C';x.fillRect(0,0,240,240);x.fillStyle='#F4EFE2';
-    for(let r=0;r<5;r++)for(let q=0;q<5;q++){x.beginPath();x.arc(q*60+(r%2?30:0),r*60,11,0,7);x.fill()}
-    for(let r=0;r<5;r++){x.beginPath();x.arc(240+(r%2?30:0)-(r%2?0:0),r*60,11,0,7);x.fill()}}));
-  addSwatch(mk(x=>{x.fillStyle='#F6F1E6';x.fillRect(0,0,240,240);x.fillStyle='#BF3F3A';for(let i=0;i<240;i+=40)x.fillRect(0,i,240,15)}));
+  const c=document.createElement('canvas');c.width=c.height=240;const x=c.getContext('2d');
+  x.fillStyle='#1E365C';x.fillRect(0,0,240,240);x.fillStyle='#F4EFE2';
+  for(let r=0;r<5;r++)for(let q=0;q<6;q++){x.beginPath();x.arc(q*60+(r%2?30:0),r*60,11,0,7);x.fill()}
+  addSwatch(c,true);
 }
+function loadFabric(){let u=null;try{u=localStorage.getItem('lastFabric')}catch{}if(!u)return;
+  const im=new Image();im.onload=()=>{const sw=addSwatch(toCanvas(im,1024),false,true);F.dress.sw=F.top.sw=sw;sync();draw()};im.src=u}
 
 /* ---------- controls ---------- */
-function vis(){$$('[data-for],[data-if]').forEach(e=>{let h=!!e.dataset.for&&e.dataset.for!==S.garment;
+function vis(){if(S.btype==='skirt'?S.bwidth==='flare':S.bwidth==='fit')S.bwidth='aline';
+  $$('[data-for],[data-if]').forEach(e=>{let h=!!e.dataset.for&&e.dataset.for!==S.garment;
     if(e.dataset.if){const[k,v]=e.dataset.if.split(':');if(S[k]!==v)h=true}e.hidden=h});
-  const n=S.btype==='skirt'?['Fitted','A-line','Flared']:['Skinny','Slim','Wide leg'];
-  $$('input[name=bwidth]').forEach((i,j)=>i.parentNode.lastChild.textContent=n[j])}
+  closeHsl();
+  const sk=S.btype==='skirt',n=sk?['Fitted','A-line','']:['','Slim','Wide leg'];
+  if(sk&&S.bwidth==='flare'||!sk&&S.bwidth==='fit')S.bwidth='aline';
+  $$('input[name=bwidth]').forEach((i,j)=>{i.parentNode.lastChild.textContent=n[j];i.parentNode.hidden=!n[j]})}
 const LEN=h=>h<500?'mini':h<640?'knee':h<715?'midi':'maxi';
 function sync(){
   $$('[data-k]').forEach(i=>{const v=get(i.dataset.k);if(i.type==='checkbox')i.checked=v;else i.value=v});
   $$('.seg input').forEach(i=>i.checked=get(i.name)===i.value);
   swatches.forEach(x=>x.btn.setAttribute('aria-pressed',x===F[cur()].sw));
+  $$('[data-col]').forEach(b=>b.style.background=S[b.dataset.col]);
   $('#lenOut').textContent=LEN(S.hem);$('#photoClear').hidden=!S.photo;
 }
 $$('[data-seg]').forEach(d=>{const k=d.dataset.seg;
@@ -463,7 +474,7 @@ $$('[data-k]').forEach(i=>i.addEventListener('input',()=>{const k=i.dataset.k;
   if(k==='hem')$('#lenOut').textContent=LEN(S.hem);draw()}));
 function setTab(t){tab=t;$$('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
   $$('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));cv.classList.toggle('drag',t!=='dress');
-  cv.style.cursor=t==='dress'?'default':'grab';say('');if(typeof pick!=='undefined'&&pick)setPick(null);draw()}
+  cv.style.cursor=t==='dress'?'default':'grab';say('');closeHsl();if(typeof pick!=='undefined'&&pick)setPick(null);draw()}
 $$('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 
 $('#photoFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
@@ -473,7 +484,7 @@ $('#photoFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';i
   catch{say('That file could not be opened as an image. Try a JPG or PNG.')}};
 $('#photoClear').onclick=()=>{S.photo=null;sync();draw();say('Photo removed.')};
 $('#fabFile').onchange=async e=>{const fs=[...e.target.files];e.target.value='';let bad=0;
-  for(const f of fs){try{addSwatch(toCanvas(await loadImage(f),1024),true)}catch{bad++}}
+  for(const f of fs){try{addSwatch(toCanvas(await loadImage(f),1024),true,true)}catch{bad++}}
   say(bad?bad+' file(s) could not be opened as images.':fs.length?'Fabric added.':'')};
 $('#fabReset').onclick=()=>{const f=F[cur()];f.fx=f.fy=0;f.frot=0;f.fsize=100;sync();draw()};
 function matchSkin(quiet){
@@ -523,9 +534,40 @@ function loadDefault(){
 function pantsUI(){const cu=$('#pcCustom');cu.hidden=!S.custom;if(S.custom){cu.dataset.c=S.custom;cu.style.background=S.custom}
   $$('.pc').forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===S.pants))}
 $$('.pc').forEach(b=>b.onclick=()=>{S.pants=b.dataset.c;pantsUI();draw()});
-$('#pantsPick').addEventListener('input',e=>{S.custom=S.pants=e.target.value;try{localStorage.setItem('pantsCustom',S.custom)}catch{}pantsUI();draw()});
+
 try{const v=localStorage.getItem('pantsCustom');if(/^#[0-9a-f]{6}$/i.test(v||''))S.custom=v}catch{}
 pantsUI();
+
+/* ---------- colour sliders ---------- */
+function closeHsl(){const p=$('#hsl');if(p)p.hidden=true}
+function hex2hsl(x){const r=parseInt(x.slice(1,3),16)/255,g=parseInt(x.slice(3,5),16)/255,b=parseInt(x.slice(5,7),16)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;let h=0,s=0;
+  if(d){s=d/(1-Math.abs(2*l-1));h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;h=(h*60+360)%360}
+  return[Math.round(h),Math.round(s*100),Math.round(l*100)]}
+function hsl2hex(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l),f=n=>{const k=(n+h/30)%12,c=l-a*Math.max(-1,Math.min(k-3,9-k,1));return Math.round(c*255).toString(16).padStart(2,'0')};return'#'+f(0)+f(8)+f(4)}
+const HN={skin:'Body skin tone',bg:'Backdrop colour',tcolor:'Top colour',custom:'Bottom colour'},mem={};let hk=null;
+function paintHsl(apply){
+  const h=+$('#hH').value,s=+$('#hS').value,l=+$('#hL').value,hex=hsl2hex(h,s,l);
+  $('#hslPrev').style.background=hex;
+  $('#stH').style.background='linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)';
+  $('#stS').style.background=`linear-gradient(90deg,hsl(${h} 0% ${l}%),hsl(${h} 100% ${l}%))`;
+  $('#stL').style.background=`linear-gradient(90deg,#000,hsl(${h} ${s}% 50%),#fff)`;
+  if(!apply)return;
+  mem[hk]={hex,v:[h,s,l]};
+  if(hk==='custom'){S.custom=S.pants=hex;try{localStorage.setItem('pantsCustom',hex)}catch{}pantsUI()}
+  else{S[hk]=hex;sync()}
+  draw();
+}
+function openHsl(k,btn){
+  const p=$('#hsl');if(!p.hidden&&hk===k){closeHsl();return}
+  hk=k;const c=k==='custom'?(S.custom||S.pants):S[k],m=mem[k],v=m&&m.hex===c?m.v:hex2hsl(c);
+  $('#hH').value=v[0];$('#hS').value=v[1];$('#hL').value=v[2];$('#hslName').textContent=HN[k];
+  let a=btn;while(a.parentNode&&!a.parentNode.classList.contains('pane'))a=a.parentNode;
+  a.after(p);p.hidden=false;paintHsl(false);
+}
+$$('[data-col]').forEach(b=>b.onclick=e=>{e.preventDefault();openHsl(b.dataset.col,b)});
+$('#pantsPick').onclick=()=>openHsl('custom',$('#pantsPick'));
+['#hH','#hS','#hL'].forEach(q=>$(q).addEventListener('input',()=>paintHsl(true)));
+$('#hslDone').onclick=closeHsl;
 
 /* ---------- drag / pinch ---------- */
 const pts=new Map();let pinch=0;
@@ -554,7 +596,7 @@ $('#save').onclick=async()=>{
 };
 $('#overClose').onclick=()=>$('#over').classList.remove('on');
 
-starters();F.top.sw=swatches[0];F.bottom.sw=swatches[1];sync();vis();loadDefault();setTab('photo');
+starters();F.top.sw=F.bottom.sw=swatches[0];sync();vis();loadDefault();loadFabric();setTab('photo');
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
 })();
 </script>
