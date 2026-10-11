@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Garment Mockup</title>
+<title>HUEreka</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -38,6 +38,9 @@ h1{font:700 1.5rem/1.1 "Bricolage Grotesque","Instrument Sans",system-ui,sans-se
   #cv{width:min(100%,calc((100vh - 120px)*2/3))}
   .panel{border-left:1px solid var(--line);padding:24px}
 }
+.zoom{display:flex;gap:8px;align-items:center;color:var(--chalk)}
+.zoom output{min-width:3.5em;text-align:center}
+.zoom .btn{min-width:44px}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:2px solid var(--line)}
 .tabs button{appearance:none;background:none;border:0;color:var(--soft);font:600 1rem/1 "Bricolage Grotesque",sans-serif;
   padding:12px 4px;margin-bottom:-2px;border-bottom:2px solid transparent;cursor:pointer}
@@ -67,7 +70,7 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1.5px solid var(--line);border-radius:8px;overflow:hidden}
 .seg label{position:relative;text-align:center;padding:10px 4px;font-size:.88rem;cursor:pointer;border-left:1px solid var(--line)}
-.seg label:first-child,.seg label[hidden]+label{border-left:0}
+.seg label:first-child,.seg label[hidden]:first-child+label{border-left:0}
 .seg input{position:absolute;opacity:0}
 .seg label:has(input:checked){background:var(--ink);color:var(--panel);font-weight:600}
 .tray{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px}
@@ -89,7 +92,8 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
 <div class="app">
   <section class="stage">
     <header><h1>HUEreka</h1></header>
-    <canvas id="cv" width="1200" height="1800" aria-label="Preview of you wearing the dress"></canvas>
+    <canvas id="cv" width="1200" height="1800" aria-label="Preview of you wearing the garment"></canvas>
+    <div class="zoom"><button type="button" class="btn" id="zOut" aria-label="Zoom out">−</button><output id="zLab">100%</output><button type="button" class="btn" id="zIn" aria-label="Zoom in">+</button><button type="button" class="btn quiet" id="zReset">Reset view</button></div>
   </section>
 
   <section class="panel">
@@ -129,8 +133,8 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
 
     <div class="pane" id="p-dress">
       <fieldset class="field"><legend>Garment</legend><div class="seg" data-seg="garment" data-o="dress:Dress,sep:Top and bottom"></div></fieldset>
-      <fieldset class="field" data-for="dress"><legend>Silhouette</legend><div class="seg" data-seg="sil" data-o="sheath:Sheath,aline:A-line,flare:Fit and flare,shift:Shift"></div></fieldset>
-      <fieldset class="field" data-for="dress"><legend>Neckline</legend><div class="seg" data-seg="neck" data-o="round:Round,v:V-neck,square:Square,boat:Boat"></div></fieldset>
+      <fieldset class="field" data-for="dress"><legend>Silhouette</legend><div class="seg" data-seg="sil" data-o="sheath:Sheath,aline:A-line,shift:Shift"></div></fieldset>
+      <fieldset class="field" data-for="dress"><legend>Neckline</legend><div class="seg" data-seg="neck" data-o="round:Round,v:V-neck,boat:Boat"></div></fieldset>
       <h2 class="sub" data-for="sep">Top</h2>
       <fieldset class="field" data-for="sep"><legend>Neckline</legend><div class="seg" data-seg="tneck" data-o="v:V-neck,collar:Shirt collar,round:Round,boat:Boat"></div></fieldset>
       <fieldset class="field"><legend>Sleeves</legend><div class="seg" data-seg="sleeve" data-o="none:None,cap:Cap,short:Short,long:Long"></div></fieldset>
@@ -152,6 +156,7 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
         </div></fieldset>
       <p class="hint" data-for="sep">Fabric images for the top and bottom are chosen in the Fabric tab.</p>
       <label class="check"><input type="checkbox" data-k="shade">Show folds and shading</label>
+      <p class="hint">Use + and − under the preview to zoom in. On this tab you can also pinch to zoom and drag to move around.</p>
     </div>
 
     <div class="pane" id="p-fabric">
@@ -188,6 +193,10 @@ const F={dress:newF(),top:newF(),bottom:newF()},FK=new Set(Object.keys(newF()));
 const cur=()=>S.garment==='dress'?'dress':S.ft;
 const get=k=>FK.has(k)?F[cur()][k]:S[k],set=(k,v)=>{if(FK.has(k))F[cur()][k]=v;else S[k]=v};
 let tab='photo',swatches=[],queued=false;
+const V={z:1,x:0,y:0};
+function clampV(){V.x=Math.min(0,Math.max(W*(1-V.z),V.x));V.y=Math.min(0,Math.max(H*(1-V.z),V.y))}
+function zoomView(f,reset){const nz=reset?1:Math.min(4,Math.max(1,V.z*f)),cx=W/2,cy=H/2;
+  V.x=cx-(cx-V.x)*nz/V.z;V.y=cy-(cy-V.y)*nz/V.z;V.z=nz;clampV();$('#zLab').textContent=Math.round(nz*100)+'%';draw()}
 const say=t=>{$('#msg').textContent=t||''};
 const draw=()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;render(false)})}};
 
@@ -391,7 +400,7 @@ function drawHead(c){
   o.globalCompositeOperation='source-in';
   const k=S.pw/S.photo.width;
   o.translate(S.px,S.py);o.rotate(S.prot*Math.PI/180);o.scale(k,k);o.drawImage(S.photo,-S.photo.width/2,-S.photo.height/2);
-  c.save();c.setTransform(1,0,0,1,0,0);c.drawImage(off,0,0);c.restore();
+  c.drawImage(off,0,0,W,H);
 }
 function guides(c){
   const m=maskPath();c.save();c.setLineDash([7,6]);
@@ -402,7 +411,7 @@ function guides(c){
 }
 
 function render(exp){
-  const c=ctx;c.setTransform(SC,0,0,SC,0,0);c.fillStyle=S.bg;c.fillRect(0,0,W,H);
+  const c=ctx;c.setTransform(SC,0,0,SC,0,0);c.fillStyle=S.bg;c.fillRect(0,0,W,H);c.translate(V.x,V.y);c.scale(V.z,V.z);
   c.fillStyle='rgba(0,0,0,.1)';c.beginPath();c.ellipse(308,800,110,9,0,0,Math.PI*2);c.fill();
   body(c);
   const g=geom();
@@ -448,7 +457,9 @@ function loadFabric(){let u=null;try{u=localStorage.getItem('lastFabric')}catch{
   const im=new Image();im.onload=()=>{const sw=addSwatch(toCanvas(im,1024),false,true);F.dress.sw=F.top.sw=sw;sync();draw()};im.src=u}
 
 /* ---------- controls ---------- */
-function vis(){if(S.btype==='skirt'?S.bwidth==='flare':S.bwidth==='fit')S.bwidth='aline';
+function vis(){const dr=S.garment==='dress';if(dr&&S.sleeve==='short')S.sleeve='cap';
+  $$('input[name=sleeve]').forEach(i=>{if(i.value==='short')i.parentNode.hidden=dr});
+  if(S.btype==='skirt'?S.bwidth==='flare':S.bwidth==='fit')S.bwidth='aline';
   $$('[data-for],[data-if]').forEach(e=>{let h=!!e.dataset.for&&e.dataset.for!==S.garment;
     if(e.dataset.if){const[k,v]=e.dataset.if.split(':');if(S[k]!==v)h=true}e.hidden=h});
   closeHsl();
@@ -465,13 +476,13 @@ function sync(){
 }
 $$('[data-seg]').forEach(d=>{const k=d.dataset.seg;
   d.dataset.o.split(',').forEach(o=>{const[v,t]=o.split(':'),l=document.createElement('label'),i=document.createElement('input');
-    i.type='radio';i.name=k;i.value=v;i.checked=get(k)===v;i.onchange=()=>{set(k,v);if(k==='btype')S.bhem=v==='skirt'?560:737;vis();sync();draw()};l.append(i,t);d.append(l)})});
+    i.type='radio';i.name=k;i.value=v;i.checked=get(k)===v;i.onchange=()=>{set(k,v);if(k==='garment'){if(v==='sep'){F.top={...F.dress};S.tfill='image'}else if(S.tfill==='image')F.dress={...F.top}}if(k==='btype')S.bhem=v==='skirt'?560:737;vis();sync();draw()};l.append(i,t);d.append(l)})});
 $$('[data-k]').forEach(i=>i.addEventListener('input',()=>{const k=i.dataset.k;
   set(k,i.type==='checkbox'?i.checked:i.type==='range'?+i.value:i.value);
   if(k==='hem')$('#lenOut').textContent=LEN(S.hem);draw()}));
 function setTab(t){tab=t;$$('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
-  $$('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));cv.classList.toggle('drag',t!=='dress');
-  cv.style.cursor=t==='dress'?'default':'grab';say('');closeHsl();if(typeof pick!=='undefined'&&pick)setPick(null);draw()}
+  $$('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));cv.classList.add('drag');
+  cv.style.cursor='grab';say('');closeHsl();if(typeof pick!=='undefined'&&pick)setPick(null);draw()}
 $$('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 
 $('#photoFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
@@ -495,14 +506,14 @@ function matchSkin(quiet){
 }
 let pick=null;
 function setPick(k){pick=k;$$('[data-pick]').forEach(b=>{const on=b.dataset.pick===k;b.textContent=on?'Cancel':'Pick from photo';b.classList.toggle('main',on);b.classList.toggle('quiet',!on)});
-  cv.style.cursor=k?'crosshair':tab==='dress'?'default':'grab';draw()}
+  cv.style.cursor=k?'crosshair':'grab';draw()}
 $$('[data-pick]').forEach(b=>b.onclick=()=>{
   if(pick===b.dataset.pick){setPick(null);say('');return}
   if(!S.photo){say('Choose a photo first.');return}
   setPick(b.dataset.pick);say(pick==='skin'?'Your whole photo is showing. Tap a patch of skin, such as your neck or cheek.':'Your whole photo is showing. Tap the wall or background behind you.')});
 function fullPhoto(c){const k=S.pw/S.photo.width;c.save();c.translate(S.px,S.py);c.rotate(S.prot*Math.PI/180);c.scale(k,k);c.drawImage(S.photo,-S.photo.width/2,-S.photo.height/2);c.restore()}
 function pickAt(e){
-  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height,o=octx;
+  const r=cv.getBoundingClientRect(),x=((e.clientX-r.left)*W/r.width-V.x)/V.z,y=((e.clientY-r.top)*H/r.height-V.y)/V.z,o=octx;
   o.setTransform(1,0,0,1,0,0);o.globalCompositeOperation='source-over';o.clearRect(0,0,off.width,off.height);o.setTransform(SC,0,0,SC,0,0);fullPhoto(o);
   const d=o.getImageData(Math.max(0,Math.round(x*SC)-4),Math.max(0,Math.round(y*SC)-4),9,9).data;let R=0,G=0,B=0,n=0;
   for(let i=0;i<d.length;i+=4)if(d[i+3]>240){R+=d[i];G+=d[i+1];B+=d[i+2];n++}
@@ -570,15 +581,16 @@ $('#hslDone').onclick=closeHsl;
 const pts=new Map();let pinch=0;
 const scale=()=>W/cv.getBoundingClientRect().width;
 const zoom=f=>{if(tab==='photo'&&S.photo)S.pw=Math.min(1400,Math.max(60,S.pw*f));
-  else if(tab==='fabric'){const q=F[cur()];q.fsize=Math.min(500,Math.max(8,q.fsize*f))}else return;sync();draw()};
-cv.addEventListener('pointerdown',e=>{if(pick){pickAt(e);return}if(tab==='dress')return;cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pinch=0;cv.style.cursor='grabbing'});
+  else if(tab==='fabric'){const q=F[cur()];q.fsize=Math.min(500,Math.max(8,q.fsize*f))}else{zoomView(f);return}sync();draw()};
+$('#zIn').onclick=()=>zoomView(1.25);$('#zOut').onclick=()=>zoomView(.8);$('#zReset').onclick=()=>zoomView(1,true);
+cv.addEventListener('pointerdown',e=>{if(pick){pickAt(e);return}cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);pinch=0;cv.style.cursor='grabbing'});
 cv.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;
   const dx=(e.clientX-p[0])*scale(),dy=(e.clientY-p[1])*scale();p[0]=e.clientX;p[1]=e.clientY;
-  if(pts.size===1){if(tab==='photo'&&S.photo){S.px+=dx;S.py+=dy}else if(tab==='fabric'){F[cur()].fx+=dx;F[cur()].fy+=dy}draw()}
+  if(pts.size===1){if(tab==='photo'&&S.photo){S.px+=dx/V.z;S.py+=dy/V.z}else if(tab==='fabric'){F[cur()].fx+=dx/V.z;F[cur()].fy+=dy/V.z}else{V.x+=dx;V.y+=dy;clampV()}draw()}
   else if(pts.size===2){const[a,b]=[...pts.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch&&d)zoom(d/pinch);pinch=d}});
-const up=e=>{pts.delete(e.pointerId);pinch=0;if(!pts.size&&tab!=='dress'&&!pick)cv.style.cursor='grab'};
+const up=e=>{pts.delete(e.pointerId);pinch=0;if(!pts.size&&!pick)cv.style.cursor='grab'};
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
-cv.addEventListener('wheel',e=>{if(tab==='dress')return;e.preventDefault();zoom(e.deltaY<0?1.05:1/1.05)},{passive:false});
+cv.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.05:1/1.05)},{passive:false});
 
 starters();F.top.sw=F.bottom.sw=swatches[0];sync();vis();loadDefault();loadFabric();setTab('photo');
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
