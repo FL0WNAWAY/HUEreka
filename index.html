@@ -88,7 +88,7 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
 <body>
 <div class="app">
   <section class="stage">
-    <header><div><h1>Huereka</h1>
+    <header><h1>HUEreka</h1></header>
     <canvas id="cv" width="1200" height="1800" aria-label="Preview of you wearing the dress"></canvas>
   </section>
 
@@ -174,8 +174,6 @@ input[type=color]{width:44px;height:36px;padding:0;border:1.5px solid var(--line
     <p id="msg" role="status"></p>
   </section>
 </div>
-
-<div id="over"><img alt="Your garment mockup"><div>Press and hold the picture to save it.</div><button class="btn" style="color:#fff;border-color:#fff" id="overClose">Close</button></div>
 
 <script>
 (()=>{
@@ -581,19 +579,6 @@ cv.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;
 const up=e=>{pts.delete(e.pointerId);pinch=0;if(!pts.size&&tab!=='dress'&&!pick)cv.style.cursor='grab'};
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',e=>{if(tab==='dress')return;e.preventDefault();zoom(e.deltaY<0?1.05:1/1.05)},{passive:false});
-
-/* ---------- save ---------- */
-$('#save').onclick=async()=>{
-  render(true);
-  const blob=await new Promise(r=>cv.toBlob(r,'image/png'));render(false);
-  if(!blob){say('The picture could not be made. Try a smaller photo.');return}
-  let dl=null;try{dl=window.claude&&await window.claude.use('downloads')}catch{}
-  if(dl){try{await dl.save({filename:'Mockup.png',data:blob});say('Picture saved.');return}
-    catch(err){if(err&&err.code==='declined'){say('Save cancelled.');return}
-      if(err&&err.code==='rate_limited'){say('A save prompt is already open.');return}}}
-  $('#over img').src=URL.createObjectURL(blob);$('#over').classList.add('on');
-};
-$('#overClose').onclick=()=>$('#over').classList.remove('on');
 
 starters();F.top.sw=F.bottom.sw=swatches[0];sync();vis();loadDefault();loadFabric();setTab('photo');
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
